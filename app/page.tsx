@@ -1,4 +1,3 @@
 import AuthGate from './auth-gate';
-import {requireChatGPTUser} from './chatgpt-auth';
 export const dynamic='force-dynamic';
-export default async function Home(){await requireChatGPTUser('/');return <AuthGate />;}
+export default function Home(){return <AuthGate />;}

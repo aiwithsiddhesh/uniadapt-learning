@@ -62,3 +62,5 @@ next-env.d.ts
 *.tsbuildinfo
 wrangler.client.json
 *.backup.sql
+
+!/build/uniadapt-worker.ts

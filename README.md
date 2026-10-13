@@ -16,15 +16,15 @@ This is an independently built implementation of the UniAdapt concept and specif
 | AI integration | Not implemented; no LLM provider, embeddings or vector database is configured |
 | Application | React 19, TypeScript, Vinext/Vite and Cloudflare Workers |
 | Database | Cloudflare D1; Drizzle schema; seven delivered SQL migrations |
-| Authentication | Sites access gate plus institutional bcrypt/four-hour JWT accounts |
-| Hosting | Owner-private ChatGPT Sites; additional client access requires authorization |
-| Validation baseline | 99 tests, TypeScript checks, production build and live health checks passed on 13 October 2026 |
+| Authentication | Cloudflare Access gateway plus institutional bcrypt/four-hour JWT accounts |
+| Hosting | Standalone Cloudflare Workers target; cloud account deployment pending |
+| Validation baseline | 106 tests, TypeScript and standalone build passed on 13 October 2026; cloud deployment pending |
 | Acceptance outstanding | Browser/accessibility, client role tests, backup restore and production load/concurrency validation |
 
 **Source:** [Private GitHub repository](https://github.com/aiwithsiddhesh/uniadapt-learning)
-**Deployment:** [Private UniAdapt Learning Campus](https://uniadapt-learning.siddhesh-ssp-parab.chatgpt.site)
+**Deployment target:** private standalone Cloudflare Workers. No new working cloud URL has been deployed yet.
 
-Receiving this repository or an institution setup link does not grant access to the owner-private website. GitHub pushes do not automatically update the deployed Site.
+Receiving this repository or an institution setup link does not grant Cloudflare Access permission. GitHub pushes do not automatically deploy the application. The previous private Site is a historical release and was not changed or deleted.
 
 ## Client and developer documentation
 
@@ -37,6 +37,7 @@ Receiving this repository or an institution setup link does not grant access to 
 | Configure authentication and accounts | [Authentication and security](docs/AUTHENTICATION.md) |
 | Operate Admin, Teacher and Student workflows | [User guide](docs/USER_GUIDE.md) |
 | Run tests and verify functionality | [Testing and verification](docs/TESTING.md) · [Recorded evidence](docs/VALIDATION.md) |
+| Host privately without ChatGPT Sites | [Standalone Cloudflare deployment](docs/CLOUDFLARE_DEPLOY.md) |
 | Deploy, back up, recover and maintain | [Deployment and operations](docs/OPERATIONS.md) |
 | Understand architecture, routes and integrations | [Architecture and API](docs/ARCHITECTURE.md) |
 
@@ -55,7 +56,7 @@ Students cannot add or drop their own Subjects. Completing a study slot records 
 
 | Module | Delivered functionality | Verification / qualification |
 |---|---|---|
-| **M01 — Authentication & User Management** | Email/optional username login; bcrypt; four-hour JWT; one role; account updates, activation/deactivation, revocation, single-use setup/reset links, throttling and scoped access | Token, authorization, rollback and SQL isolation tests; Sites audience is a separate access layer |
+| **M01 — Authentication & User Management** | Email/optional username login; bcrypt; four-hour JWT; one role; account updates, activation/deactivation, revocation, single-use setup/reset links, throttling and scoped access | Token, authorization, rollback and SQL isolation tests; Cloudflare Access is a separate access layer |
 | **M02 — Institution & Academic Setup** | Institute identity, active state, timezone and authentication policy; hierarchy CRUD and safe deactivation | Hierarchy/reference/date/capacity tests |
 | **M03 — Subject & Student Allocation** | Catalogue, Unit policy versions, Section offerings, PRIMARY/CO assignments, Subject Owner, CSV import, electives and atomic placement/promotion/transfer with history | Mixed CSV failures, ownership, capacity, stale-preview and 2,000-record foundation tests |
 | **M04 — Calendar & Timetable** | Working days, holidays, typed exam windows, exact exam instants, recurring class/lab rows, facilitator checks, snapshots and planner constraints | Calendar, DST, overlap, deadline and no-double-count tests |
@@ -78,7 +79,7 @@ pnpm db:check:local
 pnpm dev
 ```
 
-Open the local URL printed by the server, normally `http://localhost:5173`. Complete **local Sites sign-in**, then **Initialize your institution**. Local Sites sign-in is a loopback-only development mock; the institution password still uses the real authentication code. See [Setup](docs/SETUP.md) for persistence, troubleshooting and production-build limitations.
+Open the local URL printed by the server, normally `http://localhost:5173`. Choose **Initialize your institution** and enter the private setup token from your local `.dev.vars` along with Admin identity/password. There is no ChatGPT sign-in. Development bypasses the outer Access gateway only on loopback; institutional authentication stays active. See [Setup](docs/SETUP.md) for persistence, troubleshooting and production-build limitations.
 
 ```bash
 pnpm test
@@ -86,20 +87,20 @@ pnpm typecheck
 pnpm build
 ```
 
-`setup:local` generates an ignored `.dev.vars` secret without printing it and preserves an existing file. Local migration commands never create a cloud database. The [external D1 procedure](docs/DATABASE.md#creating-a-client-owned-cloudflare-d1-database) is separate.
+`setup:local` generates ignored local session/bootstrap secrets without printing them, preserves the session secret and adds a missing bootstrap token. Local migration commands never create a cloud database. The [external D1 procedure](docs/DATABASE.md#creating-a-client-owned-cloudflare-d1-database) is separate.
 
 ## Database, authentication and hosting
 
 | Concern | Current implementation | Client action |
 |---|---|---|
-| Database | D1 binding `DB`; 25 application tables; learning-state JSON cache | Keep Sites-managed storage, or provision client-owned D1 and complete host migration |
+| Database | D1 binding `DB`; 25 application tables; learning-state JSON cache | Provision client-owned D1 and follow the standalone deployment guide |
 | Authentication secret | `UNIADAPT_AUTH_SECRET` in provider secret storage | Arrange secret administration and environment-specific values through secure channels |
 | User identity | Built-in institution accounts | Identify client Admin and distribute setup/reset links privately |
-| Website access | Sites owner-private audience | Authorize client access or implement a standalone access provider |
+| Website access | Cloudflare Access verified tokens and explicit email allowlist | Configure the owner-only Access application before enabling the private URL |
 | AI | No provider integration | Agree provider, budget and data handling, then implement missing agents |
 | Backups/monitoring | Provider capabilities; no scheduled app backup job | Assign operations ownership and validate the runbook |
 
-**A `DATABASE_URL` or Supabase key does not connect this build to another database.** It calls D1 directly through the Worker binding. Generic hosting also does not replace the Sites identity gate. The guides distinguish supported setup from required migration work.
+**A `DATABASE_URL` or Supabase key does not connect this build to another database.** It calls D1 directly through the Worker binding. The standalone Worker requires configured Cloudflare Access settings in production. The default config disables public/preview URLs and fails closed; it does not create an account or deploy itself.
 
 ## Repository structure
 
@@ -111,7 +112,7 @@ pnpm build
 | `lib/engine.ts`, `lib/grading.ts`, `lib/store.ts` | Learning/planning behavior and persistence |
 | `db/schema.ts`, `drizzle/` | Schema and ordered migrations |
 | `tests/` | Domain/integration tests and role rendering checks |
-| `build/`, `vite.config.ts` | Worker/framework and Sites integration |
+| `build/`, `vite.config.ts` | Standalone Worker/framework integration; unused legacy Sites scaffolding retained for provenance |
 | `scripts/` | Install/build helpers and setup checks |
 | `wrangler.local.json` | Local DB administration; not production deployment |
 | `docs/` | Client handover, setup, usage, testing and operations |

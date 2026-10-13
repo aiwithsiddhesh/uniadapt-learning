@@ -2,7 +2,7 @@
 
 ## Evidence and its limits
 
-The M01–M04 implementation baseline passed **99 automated tests**, TypeScript checks, the production build and live read-only health/authentication-boundary probes on 13 October 2026. Automated tests use synthetic data; SQLite fixtures approximate D1 transactions. A 2,000-record foundation test verifies import/allocation and bounded statements, not production throughput or 2,000 simultaneous learners.
+The M01–M04 implementation baseline passed **106 automated tests**, TypeScript checks, the production build and live read-only health/authentication-boundary probes on 13 October 2026. Automated tests use synthetic data; SQLite fixtures approximate D1 transactions. A 2,000-record foundation test verifies import/allocation and bounded statements, not production throughput or 2,000 simultaneous learners.
 
 This handover adds and checks local setup helpers, migration commands and documentation examples. Browser/manual client UAT, accessibility, penetration assessment, real external infrastructure and production concurrency/performance remain unverified. Record new results against the exact GitHub commit; do not copy the baseline as evidence for a different deployment.
 
@@ -16,7 +16,7 @@ pnpm typecheck
 pnpm build
 ```
 
-Expected: all 99 delivered business tests pass, typecheck exits zero and build produces the Worker/client output. Node warnings about experimental/native APIs are not by themselves test failures; inspect exit code and failure summary. `pnpm lint` is available for an additional review, but no passing lint baseline is claimed. No Playwright browser suite or coverage-percentage threshold is supplied.
+Expected: all 106 current tests pass, typecheck exits zero and build produces the Worker/client output. Node warnings about experimental/native APIs are not by themselves test failures; inspect exit code and failure summary. `pnpm lint` is available for an additional review, but no passing lint baseline is claimed. No Playwright browser suite or coverage-percentage threshold is supplied.
 
 | Suite | What it verifies |
 |---|---|
@@ -26,6 +26,7 @@ Expected: all 99 delivered business tests pass, typecheck exits zero and build p
 | `tests/scope.test.mts` | Historical Teacher cannot access transferred Student's new Section/preferences/unassigned deficit |
 | `tests/migration.test.mts` | Existing accounts/tokens/academic references survive additive upgrades; foreign keys remain valid |
 | `tests/dashboard.test.mts` | Server-rendered role navigation excludes other workspaces; not click/visual browser testing |
+| `tests/standalone.test.mts` | Protected/atomic bootstrap, concurrent initialization, verified private JWT gateway and no public/preview defaults |
 | `tests/learning.test.mts` | Existing objective practice, evidence, planning, approval, note helper and persistence/revision behavior |
 
 Run a specific suite while debugging, for example `node --test tests/foundation.test.mts`. Do not change tests merely to suppress a real failed rule.
@@ -60,9 +61,9 @@ With the local dev server running, open `/api/health` on its printed local origi
 }
 ```
 
-The probe checks table presence and synthetic runtime/domain fixtures; it does not authenticate real role accounts or verify browser workflows, backups or load. A 503 is not ready. On the hosted Site the outer Sites audience gate still applies; do not circulate internal bypass credentials to run health checks.
+The probe checks table presence and synthetic runtime/domain fixtures; it does not authenticate real role accounts or verify browser workflows, backups or load. A 503 is not ready. On the cloud Worker the outer Cloudflare Access gate still applies; do not circulate internal bypass credentials to run health checks.
 
-Without an institution session, `/api/academic`, `/api/accounts` and `/api/campus` should return 401 after reaching the app. A logged-in Teacher/Student should receive 403 for Admin academic/account routes. The native Sites gate can intercept requests earlier, so distinguish platform access denial from an application status.
+Without an institution session, `/api/academic`, `/api/accounts` and `/api/campus` should return 401 after reaching the app. A logged-in Teacher/Student should receive 403 for Admin academic/account routes. The private Access gate can intercept requests earlier, so distinguish platform access denial from an application status.
 
 ## Manual acceptance fixture
 
@@ -84,7 +85,7 @@ All rows below are **to execute**, not pre-recorded passes. Capture result, comm
 
 | ID | Steps | Expected result |
 |---|---|---|
-| AUTH-01 | Initialize fresh institution, then attempt another bootstrap | First Admin succeeds; second initialization rejected |
+| AUTH-01 | Initialize with the private bootstrap token, then attempt another bootstrap | First Admin succeeds; second initialization rejected |
 | AUTH-02 | Activate Teacher/Student; login by email and username | Correct role workspace; no cross-role menu |
 | AUTH-03 | Wrong/inactive credentials; exceed configured failed limits | Generic credential rejection; applicable throttle response |
 | AUTH-04 | Use setup link, reuse it; generate replacement and try old link | Single consumption; used/replaced link fails |

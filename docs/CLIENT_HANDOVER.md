@@ -19,7 +19,7 @@ This package delivers source and operating documentation. It does not by itself 
 | Application and role workspaces | `app/`, `lib/`, `components/` |
 | Academic/auth schema and seven migrations | `db/schema.ts`, `drizzle/` |
 | Dependency/build configuration | `package.json`, `pnpm-lock.yaml`, `vite.config.ts`, `build/`, `scripts/` |
-| Business test suite | `tests/`; 99-test baseline |
+| Business test suite | `tests/`; 106 current tests (99 foundation/learning plus seven standalone gateway/bootstrap tests) |
 | Professional project entry point | `README.md` |
 | Setup and safe local configuration tools | `docs/SETUP.md`, `setup:local`, `check:setup`, local D1 commands |
 | External database and auth guides | `docs/DATABASE.md`, `docs/AUTHENTICATION.md`; non-secret templates |
@@ -51,7 +51,7 @@ Accept the foundation against FR-AUTH-001..004 and FR-ADM-001..007 and the agree
 - [ ] Client receives authorized access to the private repository; appropriate staff roles agreed.
 - [ ] Exact accepted source commit and versioned SRS retained in the client records.
 - [ ] Client product owner, institution Admin, maintainer and operations/data owners named.
-- [ ] Hosting strategy agreed: continue approved Sites audience or implement standalone client infrastructure.
+- [ ] Hosting strategy agreed: complete the prepared standalone Cloudflare deployment.
 - [ ] Client can reach the agreed private application and sign in; all three roles verified independently.
 - [ ] Database ownership/binding/schema and backup/export access recorded.
 - [ ] Secret ownership/rotation and account reset procedures agreed without publishing values.
@@ -79,7 +79,7 @@ Names, support hours and response times are intentionally unspecified until agre
 
 ## Priority gaps before broad production use
 
-Host/client-access ownership; operational backup restore; independent security/browser/accessibility tests; realistic storage/concurrency validation; documented Admin recovery; complete clean-data/retention controls. Standalone hosting needs the identity/Worker migration described in Operations. Broader product scope additionally needs all pending agents and M05–M18 requirements.
+Host/client-access ownership; operational backup restore; independent security/browser/accessibility tests; realistic storage/concurrency validation; documented Admin recovery; complete clean-data/retention controls. Standalone identity/Worker code is prepared; actual account, private Access policy, resources and deployment remain pending. Follow the standalone guide. Broader product scope additionally needs all pending agents and M05–M18 requirements.
 
 ## Sign-off template
 

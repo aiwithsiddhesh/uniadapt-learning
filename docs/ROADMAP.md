@@ -6,7 +6,7 @@ Baseline: concept/SRS version 0.0; source audit and technical evidence dated 13 
 
 | ID | Module | Status | Working scope | Outstanding scope |
 |---|---|---|---|---|
-| M01 | Authentication & User Management | Foundation functionality implemented | Accounts, bcrypt/JWT, reset/revocation/throttling, role/scope queries | Independent security/client/browser acceptance; standalone host identity integration |
+| M01 | Authentication & User Management | Foundation functionality implemented | Accounts, bcrypt/JWT, reset/revocation/throttling, role/scope queries | Independent security/client/browser acceptance; real Cloudflare Access/host acceptance |
 | M02 | Institution & Academic Setup | Foundation functionality implemented | Hierarchy, Institute/timezone/policy, validation, deactivation | Client hierarchy/data acceptance |
 | M03 | Subject & Student Allocation | Foundation functionality implemented | Catalogue/Units, owner/Teachers, offerings, CSV/electives, placement/promotion/history | Client allocation/data acceptance and realistic capacity evaluation |
 | M04 | Calendar & Timetable | Foundation functionality implemented | Calendar/windows/exams, recurrence, facilitator validation, versioning and planning constraints | Client calendar acceptance and browser/real-D1 validation |
@@ -58,4 +58,4 @@ Detailed scope, priority, owner, estimate and schedule require an agreed client 
 
 ## Decisions required before a production client release
 
-Select Sites-hosted access versus standalone migration; identify the authoritative SRS revision; assign product/operations/data owners; choose AI provider/data policy only when AI implementation begins; define realistic concurrent usage and evidence-retention expectations; agree support and acceptance criteria. These are decisions to record, not automatically approved changes to the current private deployment.
+Confirm the standalone hosting account and private Access configuration; identify the authoritative SRS revision; assign product/operations/data owners; choose AI provider/data policy only when AI implementation begins; define realistic concurrent usage and evidence-retention expectations; agree support and acceptance criteria. These are decisions to record, not automatically approved changes to the current private deployment.

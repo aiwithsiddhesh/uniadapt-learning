@@ -132,6 +132,6 @@ There is no complete production cleanup/purge UI. For a clean client environment
 | Capacity exceeded | Change eligible choices/capacity before previewing again |
 | Preview/campus changed | Reload and regenerate the preview; do not reuse an old hash |
 | Wrong workspace | Check assigned account role; roles are not selected on login |
-| Invitation inaccessible | Check both Sites audience and institution setup token expiry/replacement |
+| Invitation inaccessible | Check both Cloudflare Access audience and institution setup token expiry/replacement |
 
 For support, report role, exact screen, redacted record IDs, steps and expected/actual behavior. Do not include passwords, setup links or real Student CSV files in public/shared tickets.

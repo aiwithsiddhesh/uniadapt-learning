@@ -2,35 +2,38 @@
 
 ## Two separate access layers
 
-| Layer | What it controls | Current owner/configuration |
-|---|---|---|
-| ChatGPT Sites | Who can reach the private hosted website and trusted native identity headers | Existing Site owner and Sites sharing policy |
-| UniAdapt institution | Admin/Teacher/Student role, credentials, current session and academic scope | Institution Admin plus server-side account/auth code |
+| Layer | Purpose |
+|---|---|
+| Cloudflare Access plus Worker verification | Owner-only access to HTML, APIs and assets; signature/issuer/audience/expiry/email allowlist verified |
+| Institution authentication | Admin/Teacher/Student passwords, four-hour JWT sessions and academic scope |
 
-Both matter. The current hosted Site is owner-private. An invitation generated inside UniAdapt neither invites a person to GitHub nor grants Sites audience access. Client/Teacher/Student website access must be authorized separately before links can be used on that Site.
+The current source does not use ChatGPT Sites identity headers or reserved sign-in paths. `lib/private-access.ts` verifies Cloudflare Access using `jose`; `build/uniadapt-worker.ts` enforces it for all requests. Missing settings fail closed. Only loopback requests in a development build bypass the outer gateway; institution authentication stays enabled. See [private deployment](CLOUDFLARE_DEPLOY.md).
 
-`app/chatgpt-auth.ts` reads the platform's trusted `oai-authenticated-user-*` headers. `/` and `/api/session` depend on that native identity. In development, `build/sites-vite-plugin.ts` supplies a loopback-only mock after local Sites sign-in. Production must never trust these headers directly from public clients. A generic reverse proxy that merely forwards them is not a secure replacement.
+A setup/reset link does not grant Cloudflare Access or GitHub permission. The deployer must separately approve the owner/client audience.
 
 ## Server configuration
 
 | Configuration | Value / purpose |
 |---|---|
 | `UNIADAPT_AUTH_SECRET` | Random server-side HMAC signing secret; minimum 32 characters |
+| `UNIADAPT_BOOTSTRAP_TOKEN` | Private first-Admin initialization token; minimum 32 characters |
+| `UNIADAPT_ACCESS_ISSUER` / `UNIADAPT_ACCESS_AUDIENCE` | Cloudflare Access team issuer and application audience |
+| `UNIADAPT_ALLOWED_EMAILS` | Exact comma-separated email allowlist for the private gateway; no wildcards |
 | `DB` | D1 binding containing accounts, institution root, token versions and throttling/audit tables |
 | JWT issuer / audience | `uniadapt-learning` / `uniadapt`, defined in code |
 | Session cookie | `uniadapt_session`; Secure, HttpOnly, SameSite=Strict; four-hour maximum age |
 | Roles | Exactly one of `ADMIN`, `TEACHER`, `STUDENT` |
 
-On the existing Site, the secret is already in hosting secret storage. Its value is not delivered in Git. For local development run `pnpm setup:local`. For a completed client-owned Worker deployment, the authorized operator can set the secret using the provider secret store / `wrangler secret put UNIADAPT_AUTH_SECRET` against that Worker's deployment config, not the database-only config. Never put the secret in client JavaScript, an issue, the README or a build artifact.
+On standalone Cloudflare, the operator must set the secret in that account. No cloud secret/account has been configured by this source preparation. For local development run `pnpm setup:local`. For a completed client-owned Worker deployment, the authorized operator can set the secret using the provider secret store / `wrangler secret put UNIADAPT_AUTH_SECRET` against that Worker's deployment config, not the database-only config. Never put the secret in client JavaScript, an issue, the README or a build artifact.
 
 There are no refresh tokens. Protected requests validate JWT signature, issuer/audience, four-hour validity, active account, matching role and `token_version`. Logout, reset, revocation and relevant account changes invalidate earlier sessions. Passwords use bcrypt with cost 10. Password input must have at least 12 characters and no more than 72 UTF-8 bytes. See code in `lib/auth.ts`; hashing is not performed by an external auth SaaS.
 
 ## First Admin
 
-1. Initialize/migrate a fresh database and configure the secret.
-2. Enter through the authorized Sites identity, or use the local developer mock on localhost.
+1. Initialize/migrate a fresh database and configure both server secrets plus the private gateway settings.
+2. Pass the private Cloudflare Access policy in cloud production, or open the loopback developer URL.
 3. The sign-in screen shows **Initialize your institution** when the default institution root does not exist.
-4. Enter Admin identity and a password satisfying the rule above; submit once.
+4. Enter Admin identity/password and the private `UNIADAPT_BOOTSTRAP_TOKEN` supplied by the operator; submit once.
 5. Confirm the Admin-only workspace and initialize the academic structure.
 
 Bootstrap is not an ongoing public signup endpoint. A second initialization is rejected. No default Admin password is supplied. The initial campus includes labeled starter material and a sample learner profile; see [User guide](USER_GUIDE.md#starter-data-and-clean-client-data) before client use.
@@ -70,8 +73,8 @@ Role changes cannot orphan Teacher ownership/assignments or a Student's active a
 
 Plan a maintenance window, set a new random secret in the environment's secret store, redeploy/restart as required and verify health plus all three role logins. Existing JWT signatures stop validating, so users must sign in again. Rotating the signing secret does not change stored password hashes or by itself invalidate outstanding setup-token hashes. Use Admin revocation/reset-token management when those must also be invalidated. Never reuse staging/development secrets in production.
 
-## Standalone authentication migration
+## Standalone authentication status
 
-Not implemented: MFA, institutional SSO, Google login for institution accounts, OAuth provider mapping, Supabase Auth or a public user signup page. The Google sign-in used to create the GitHub repository is unrelated to UniAdapt authentication.
+The Sites dependency has been removed. Protected bootstrap, institutional login and the verified Cloudflare Access Worker gateway are implemented and tested. Actual Cloudflare configuration, user/browser acceptance and provider CPU/load tests remain pending; no external deployment exists yet. No institutional SSO, MFA, automatic email provider or public signup is implemented.
 
-Before removing the Sites dependency, implement an authenticated server identity boundary, restrict fresh-institution bootstrap, replace reserved platform sign-in/out paths, remove local mock behavior from production, establish trusted header stripping/IP handling and retain account/RBAC/token checks. Test all three roles, invitation entry, logout/reset/revocation, cross-origin behavior and direct origin access in the target host. Review [Operations](OPERATIONS.md#standalone-client-hosting) before client release.
+First initialization requires `UNIADAPT_BOOTSTRAP_TOKEN` of at least 32 characters and commits campus/root/Admin/audit atomically. Incorrect/missing authorization creates no records; concurrent initialization creates one Admin. The UI requests this token only for initialization. Configure it privately and never put its value in an issue or screenshot.

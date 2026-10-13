@@ -4,12 +4,12 @@
 
 ```mermaid
 flowchart TD
-  B["Browser: role workspace"] --> G["Sites access gate"]
+  B["Browser: role workspace"] --> G["Cloudflare Access gate"]
   G --> W["Worker: routes, session and domain rules"]
   W --> D["D1: accounts, academic records and learning cache"]
 ```
 
-The UI is React/TypeScript with Next-style app routes, compiled using Vinext/Vite to Cloudflare Workers. API code imports `cloudflare:workers` bindings. The existing host supplies the trusted Sites identity; the local Vite plugin supplies a development-only loopback mock. Neither is an external institutional auth provider.
+The UI is React/TypeScript with Next-style app routes, compiled using Vinext/Vite to Cloudflare Workers. API code imports `cloudflare:workers` bindings. The Worker verifies Cloudflare Access tokens and explicit allowed emails. Local development bypasses that outer gate only on loopback. Institution passwords/JWTs are handled by UniAdapt; no ChatGPT identity is required.
 
 The server resolves institution sessions and validates roles/references before mutations. Teacher/Student data reads use SQL projections and response shaping for authorized records. Learning state remains in a bounded JSON cache; academic/auth records are normalized. Stale revision checks and operation-marker guards protect bulk writes; immutable Unit/calendar snapshots preserve earlier policies.
 
@@ -18,31 +18,31 @@ The server resolves institution sessions and validates roles/references before m
 | Layer | Files | Responsibilities |
 |---|---|---|
 | UI | `auth-gate.tsx`, `campus-app.tsx`, `academic-setup.tsx`, `foundation-tools.tsx`, `account-controls.tsx` | Sign-in and role-specific interactive flows |
-| Access/session | `chatgpt-auth.ts`, `auth.ts`, `access.ts`, `scoped-store.ts`, `account-admin.ts` | Native identity, JWT, accounts, ownership and record scope |
+| Access/session | `private-access.ts`, `bootstrap.ts`, `auth.ts`, `access.ts`, `scoped-store.ts`, `account-admin.ts` | Private Access gateway, protected bootstrap, JWT, accounts and scope |
 | Academic | `academic.ts`, `academic-store.ts`, `calendar.ts`, `student-import.ts` | Structure, assignments, allocation, versioning, timetable/exams and import |
 | Learning | `engine.ts`, `grading.ts`, `store.ts`, `types.ts` | Existing objective assessment, evidence, eligibility, planning and cache |
 | Persistence | `db/schema.ts`, `drizzle/*.sql` | Application schema/migrations |
-| Hosting | `vite.config.ts`, `build/`, `.openai/hosting.json` | Worker build/bindings and Sites integration |
+| Hosting | `vite.config.ts`, `build/uniadapt-worker.ts`, `wrangler.json` | Standalone Worker build/bindings and private gateway |
 
 No LLM calls, AI agent service, queue, vector index, production file-ingestion worker or application scheduler is configured.
 
 ## API routes
 
-All bodies/responses are JSON except standard HTML/redirect behavior for `/`. App endpoints set no-store cache headers. Authentication uses the HttpOnly cookie, not a browser-localStorage token. The hosted audience gate can intercept before these routes.
+All bodies/responses are JSON except standard HTML/redirect behavior for `/`. App endpoints set no-store cache headers. Authentication uses the HttpOnly cookie, not a browser-localStorage token. The Cloudflare Access gateway protects every cloud request before these routes.
 
 | Method / route | App authorization | Request / purpose |
 |---|---|---|
-| `GET /api/session` | Native Sites identity | `{user, needsSetup, ownerName, ownerEmail}`; user can be null |
-| `POST /api/session` | Native Sites identity; institution auth where needed | `action: bootstrap, login, accept, logout`; identity/password/token as relevant |
+| `GET /api/session` | Private gateway; institution session optional | `{user, needsSetup, ownerName, ownerEmail}`; user can be null |
+| `POST /api/session` | Private gateway; setup token for bootstrap, institution auth where needed | `action: bootstrap, login, accept, logout`; identity/password/token as relevant |
 | `GET /api/accounts` | Admin session | Sanitized account list; no password/token hashes |
 | `POST /api/accounts` | Admin session | `action: create, update, reset, revoke, setActive` |
 | `GET /api/academic` | Admin session | Academic data, Teacher list and current revision |
 | `POST /api/academic` | Admin session | `{revision, action}` with academic action `type` |
 | `GET /api/campus` | Institution session | Role-scoped state, revision and principal |
 | `POST /api/campus` | Institution session + action/scope authorization | `{revision, action}`; course/learner/session operations |
-| `GET /api/health` | Hosting audience on current Site; no institutional role check inside route | Read-only synthetic readiness probe; do not expose freely after a host migration without reviewing access |
+| `GET /api/health` | Private gateway; no additional institution role check inside route | Read-only synthetic readiness probe; do not expose freely after a host migration without reviewing access |
 
-Native Sites identity is explicitly checked by the session routes. Other domain routes verify institutional JWTs and scope and rely on the hosted outer audience for the platform boundary. Do not generalize that every route independently verifies native identity.
+The standalone Worker verifies the private gateway for HTML, APIs and assets. Domain routes additionally verify institution JWTs and role scope. Session entry no longer trusts native Sites headers.
 
 ## Request examples
 
@@ -92,7 +92,7 @@ Review first. Confirmation uses the same inputs with `type: 'confirmPlacement'` 
 | Status | Meaning / caller action |
 |---|---|
 | 400 | Invalid input/state; show domain reason and correct the form |
-| 401 | Institution session missing/expired/revoked, or native identity missing on session entry |
+| 401 | Institution session missing/expired/revoked |
 | 403 | Role/scope/origin/inactive authority restriction; do not retry with fabricated role/headers |
 | 404 | Requested record not found where route/domain returns it |
 | 409 | Stale revision/initialization conflict; reload/repreview before deliberate retry |

@@ -14,6 +14,8 @@ try {
 } catch { add('Valid wrangler.local.json', false); }
 try {
   const text = readFileSync(file('.dev.vars'), 'utf8');
+  const bootstrap=text.match(/^UNIADAPT_BOOTSTRAP_TOKEN\s*=\s*(.+)$/m)?.[1]?.trim().replace(/^['"]|['"]$/g, '');
+  add('Local institution setup token configured (value hidden)', Boolean(bootstrap && bootstrap.length >= 32));
   const secret = text.match(/^UNIADAPT_AUTH_SECRET\s*=\s*(.+)$/m)?.[1]?.trim().replace(/^['"]|['"]$/g, '');
   add('Local authentication secret configured (value hidden)', Boolean(secret && secret.length >= 32));
 } catch { add('Local .dev.vars exists', false); }

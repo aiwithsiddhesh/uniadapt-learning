@@ -12,9 +12,9 @@
 | Original files/vector storage | No active R2/vector configuration | Required for later content/AI work |
 | CI/CD | No GitHub auto-deployment or acceptance CI pipeline configured | Maintainer publishes manually through authorized hosting workflow |
 
-The GitHub source was imported from the live version. This handover adds documentation and local setup utilities; pushing them to GitHub does not redeploy the live Site or transfer its ownership.
+The GitHub source was imported from the live version and now includes a standalone Cloudflare runtime, private gateway and protected first-Admin initialization. Pushing source to GitHub does not deploy the standalone application, redeploy the historical Site or transfer hosting ownership.
 
-## Existing Sites deployment procedure
+## Legacy Sites deployment procedure (historical source only)
 
 Use the existing project's authorized Sites management workflow; do not create a second Site merely to update code.
 
@@ -30,20 +30,20 @@ The runtime secret is managed separately from source. A deployment does not crea
 
 ## Standalone client hosting
 
-**Status: migration engineering required; not a validated turnkey deployment.** The database provisioning guide can prepare D1, but this repository's Worker/framework integration currently expects Sites-controlled identity and publishing.
+**Status: standalone code prepared and tested; cloud deployment/account acceptance pending.** Follow [private Cloudflare deployment](CLOUDFLARE_DEPLOY.md). The current source uses `wrangler.json`, a standalone Worker entrypoint, protected initialization and Cloudflare Access validation; it no longer requires Sites identity or publishing. The legacy Sites procedure applies only to the historical version-4 source, not this standalone build.
 
 | Migration task | Required result |
 |---|---|
 | Provider ownership | Client controls hosting account, billing, environment names and private/staging access |
 | Build/deploy integration | Reviewed Worker entrypoint/assets, client resource bindings and repeatable artifact build; no placeholder IDs deployed |
-| Identity boundary | Replace platform sign-in/out/header dependence with authenticated server identity; block forged identity headers and unauthenticated bootstrap |
+| Identity boundary | Configure the implemented Access gateway, protected bootstrap and institution auth with authenticated server identity; block forged identity headers and unauthenticated bootstrap |
 | Institution auth | Preserve built-in role/JWT/token/version checks or implement a reviewed equivalent; rerun scope/reset/revocation tests |
 | Data transfer | Export/import all relevant tables/cache and migrate schema; verify IDs, history, row counts and foreign keys |
 | Secrets | Client-owned environment-specific secret store; no frontend or committed credentials |
 | Operations | Restricted origin/admin access, trustworthy IP handling, logs/health, backups, tested restore and rollback |
 | Acceptance | End-to-end browser and real-provider tests for Admin/Teacher/Student; target load/concurrency and cache-growth tests |
 
-After implementing this integration, create the deployment config through that provider's supported Worker/Vinext integration and bind real D1 as `DB`. `wrangler.local.json` and `wrangler.client.json` are database-administration configs, not deployment configs. Do not run a generic deploy command against either expecting a complete private product.
+Use the root `wrangler.json` as the application template and follow the standalone guide to bind real D1 as `DB`. `wrangler.local.json` and the database-only template are database-administration configs, not deployment configs. Do not run a generic deploy command against either expecting a complete private product.
 
 Vercel, a VPS, PostgreSQL/Supabase or alternate auth providers need separate architecture/adapter changes. The delivered Next-style routes do not make this an ordinary portable `next start` application; the runtime imports `cloudflare:workers`.
 
@@ -81,7 +81,7 @@ Use hosting Worker logs, health status, 4xx/5xx patterns, D1/storage errors and 
 | Incident | Immediate checks | Recovery direction |
 |---|---|---|
 | Health 503/storage failure | Binding, secret and schema/table presence; provider logs | Repair environment/migration; validate isolated recovery before data replacement |
-| Many 401 responses | Secret change, expired/revoked sessions, native audience | Restore intended access/config or require sign-in; do not disable auth |
+| Many 401 responses | Secret change, expired/revoked institution sessions | Restore intended access/config or require sign-in; do not disable auth |
 | Unexpected 403 | Role, assignment, active scope and origin | Correct authorized assignment or setup; preserve access restrictions |
 | 409 conflicts | Concurrent writes/stale previews | Reload/repreview; retry deliberate operation, not blind resubmission |
 | 413 cache limit | JSON cache size and material/history growth | Preserve/export data; prioritize normalized learning storage; do not silently discard history |

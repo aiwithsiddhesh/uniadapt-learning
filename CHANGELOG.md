@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-10-13 — Standalone private hosting preparation
+
+- Remove native Sites login/headers from application entry and sessions; add protected atomic first-Admin setup.
+- Add a standalone Cloudflare Worker, verified Access JWT/email gateway and Worker-first asset protection.
+- Disable public/preview URLs in the default configuration; add generated deployment checks and the private deployment guide.
+- Pin jose 6.2.12; add seven standalone security tests. All 106 tests and standalone build pass.
+- No new cloud deployment, paid plan or client resources have been created; Cloudflare account access is required.
+
 ## 2026-10-13 — Client handover documentation
 
 - Replace the implementation-only README with product overview, delivery status, setup entry point, roadmap and responsibility boundaries.

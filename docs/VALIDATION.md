@@ -26,3 +26,7 @@ Checks ran in a separate source snapshot with installed dependency reuse. This e
 Still pending: browser clicks/layout/accessibility, independent security assessment, clean-machine dependency installation, client-owned D1 provisioning, standalone identity integration, backup restoration, actual client UAT and production load/concurrency. The checklist in [Testing](TESTING.md) is for executing these checks, not a set of pre-approved passes.
 
 The prior live version-4 readiness probe returned ready/connected and passed assessment, planning, role, authentication, enrollment and calendar fixtures; unauthenticated academic access returned 401. That is earlier deployed-version evidence and does not certify a future client host or an unchanged environment indefinitely.
+
+## Standalone preparation update — 13 October 2026
+
+All 106 tests and standalone production build passed, including seven new bootstrap/private-gateway tests. Generated config disables public and preview URLs and uses Worker-first asset requests. The signing/gateway behavior is tested with synthetic keys/fixtures. No real Cloudflare deployment or Access policy has been created or accepted.

@@ -6,11 +6,11 @@
 
 | Environment | Use | Database | Access |
 |---|---|---|---|
-| Local development | Developer evaluation and synthetic test data | Local D1 simulation in `.wrangler/state` | Loopback-only Sites mock, then institution login |
-| Existing private Site | Review currently deployed foundation | Provider-managed D1 | Authorized Sites user, then institution login |
-| Client-owned cloud | Future client production/staging | Client-owned D1 | Requires completed host/identity integration |
+| Local development | Developer evaluation and synthetic test data | Local D1 simulation in `.wrangler/state` | Loopback development gateway bypass, then institution login |
+| Legacy private Site | Historical release, not the new hosting target | Previous provider-managed D1 | Previous authorized Sites access |
+| Client-owned cloud | Future client production/staging | Client-owned D1 | Code prepared; requires actual account, secrets and Access configuration |
 
-The third environment is not an already working one-command deployment. Complete the [operations migration checklist](OPERATIONS.md#standalone-client-hosting) before using it.
+The third environment has not been deployed. Follow [private standalone deployment](CLOUDFLARE_DEPLOY.md) to configure the real account, resources and Access policy.
 
 ## Prerequisites
 
@@ -47,7 +47,7 @@ pnpm setup:local
 pnpm check:setup
 ```
 
-`setup:local` writes a cryptographically random 64-character value to `.dev.vars` as `UNIADAPT_AUTH_SECRET`, with restrictive file permissions where supported. It prints no secret and does not replace an existing file. An existing empty/example value must be corrected locally; never reuse a production secret for development.
+`setup:local` writes a cryptographically random 64-character value to `.dev.vars` as `UNIADAPT_AUTH_SECRET`, with restrictive file permissions where supported. It prints no secret, preserves the session secret and adds a missing `UNIADAPT_BOOTSTRAP_TOKEN`. Read the local bootstrap token privately from `.dev.vars` for first-Admin setup. An existing empty/example value must be corrected locally; never reuse a production secret for development.
 
 `check:setup` checks Node, installed framework tools, the local D1 binding, the secret's presence/minimum length and delivered migration files. It does not connect to a cloud provider, validate account access or prove the database is migrated.
 
@@ -72,11 +72,11 @@ No cloud account, paid database or remote D1 creation is needed for these comman
 pnpm dev
 ```
 
-Open the printed loopback URL, normally `http://localhost:5173`. Use **localhost**, not a LAN IP, public tunnel or shared preview: the local Sites mock rejects non-loopback traffic and strips incoming identity headers.
+Open the printed loopback URL, normally `http://localhost:5173`. Use **localhost**, not a LAN IP, public tunnel or shared preview: the private Worker bypasses its outer gateway only for loopback development requests.
 
-1. Use the local Sites sign-in screen. The mock identity is `Seedy` / `seedy@sites.test`; it is a developer fixture, not a client account or institutional password.
+1. Open the application directly. No Sites/ChatGPT identity or mock account is required.
 2. Choose **Initialize your institution** when no institution exists.
-3. Enter an Admin name, email and password of at least 12 characters and at most 72 UTF-8 bytes.
+3. Enter the local institution setup token from `.dev.vars`, Admin name/email and a password of at least 12 characters and at most 72 UTF-8 bytes.
 4. Follow [Admin setup](USER_GUIDE.md#admin-first-time-setup), using synthetic Student records.
 5. Sign out of the institution account before testing a different role. A role is assigned by Admin; there is no dashboard role selector.
 
@@ -90,9 +90,9 @@ pnpm typecheck
 pnpm build
 ```
 
-The delivered business suite baseline is 99 passing tests. `pnpm build` compiles the Worker/client bundle; it does not deploy. The [Testing guide](TESTING.md) separates automated evidence from remaining browser/client acceptance.
+The current suite has 106 passing tests: 99 foundation/learning tests plus seven standalone bootstrap/access tests. `pnpm build` compiles the Worker/client bundle; it does not deploy. The [Testing guide](TESTING.md) separates automated evidence from remaining browser/client acceptance.
 
-`pnpm start` runs a compiled Worker locally. Unlike `pnpm dev`, it does not provide the Vite local Sites sign-in middleware. Without a trusted identity integration, `/` and `/api/session` cannot complete the normal sign-in flow. Use `pnpm dev` for the documented local product evaluation; do not treat `pnpm start` as standalone hosting support.
+`pnpm start` runs the compiled production Worker locally. Production has no development gateway bypass; configured, verified Cloudflare Access tokens are required. Use `pnpm dev` for local product evaluation, and the standalone guide for private cloud deployment.
 
 ## Configuration reference
 
@@ -102,7 +102,10 @@ The delivered business suite baseline is 99 passing tests. `pnpm build` compiles
 | `DB` Worker binding | D1 database used by routes | Yes |
 | `.dev.vars` | Local secret values | Local only |
 | `wrangler.local.json` | Local migration/query configuration | For delivered local DB commands |
-| `.openai/hosting.json` | Existing Sites project identity; `d1: DB` | Preserve for existing Site; not a portable cloud credential |
+| `wrangler.json` | Standalone local/default Worker configuration | Yes; public and preview URLs disabled |
+| `UNIADAPT_BOOTSTRAP_TOKEN` | Authorizes fresh institution initialization | Required until first Admin is created |
+| `UNIADAPT_ACCESS_ISSUER`, `UNIADAPT_ACCESS_AUDIENCE`, `UNIADAPT_ALLOWED_EMAILS` | Verified Cloudflare Access and explicit private audience | Required in cloud production |
+| `.openai/hosting.json` | Historical Site metadata | Not used by the standalone build |
 | `.sites-runtime/execution-profile.json` | Checkout-local Sites execution choice | Optional; clean clones default to portable |
 | AI provider variables | No code consumes an AI provider key | Not implemented |
 | `DATABASE_URL` | No code consumes a Postgres/Supabase URL | Unsupported |
@@ -114,8 +117,8 @@ The delivered business suite baseline is 99 passing tests. `pnpm build` compiles
 | `node:sqlite` or `.ts` loading fails | Upgrade to supported Node; recorded version is 24.19.0 |
 | pnpm lock/version failure | Use 11.25.0 and the committed lockfile; do not silently regenerate it |
 | Storage unavailable / missing table | Run local migration and table checks; verify the binding and persistence directory match |
-| Authentication not configured | Generate/configure `.dev.vars`; restart the dev server |
-| Redirect to Sites sign-in / sign-in 404 | Use `pnpm dev` on localhost; compiled `start` has no local mock |
+| Authentication not configured | Generate/configure session/bootstrap secrets in `.dev.vars`; restart the dev server |
+| Private access 403/503 | Use `pnpm dev` on localhost locally; cloud production requires verified Access settings/token |
 | 401 after login | Check the session cookie, actual origin and expiry; sign in again; use localhost and a supported browser |
 | 403 editing another scope | Expected authorization unless Admin's assignment/reference setup is wrong |
 | 409 saving or confirming a preview | Another operation changed the revision; reload and preview again |

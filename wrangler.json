@@ -1,0 +1,21 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "uniadapt-learning",
+  "main": "build/uniadapt-worker.ts",
+  "compatibility_date": "2026-05-15",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "preview_urls": false,
+  "assets": {"run_worker_first": true},
+  "vars": {
+    "UNIADAPT_ACCESS_ISSUER": "",
+    "UNIADAPT_ACCESS_AUDIENCE": "",
+    "UNIADAPT_ALLOWED_EMAILS": ""
+  },
+  "d1_databases": [{
+    "binding": "DB",
+    "database_name": "site-creator-d1",
+    "database_id": "00000000-0000-4000-8000-000000000000",
+    "migrations_dir": "drizzle"
+  }]
+}

@@ -4,7 +4,7 @@
 
 The application uses Cloudflare **D1** through the server-side `env.DB` binding. D1 provides a SQLite-compatible data model in the Worker environment. `db/schema.ts` defines the schema; routes/domain stores use prepared SQL and D1 batches. A local SQLite/D1 simulation is used for development; Node's in-memory SQLite fixtures are used by automated tests.
 
-There is no database URL, Postgres driver, Supabase client or generic ORM adapter switch in this release. External D1 is the closest supported storage technology, but moving the existing Sites deployment to client-owned infrastructure still requires host integration.
+There is no database URL, Postgres driver, Supabase client or generic ORM adapter switch in this release. External D1 is the closest supported storage technology, and the standalone host code is prepared; actual client deployment remains pending.
 
 ## Application tables
 
@@ -92,7 +92,7 @@ A clean foreign-key check returns no violations. Do not expose local SQL/admin i
    ```
 
 6. Record database name, ID, account ownership, schema version and access administrator in the private client asset inventory. Keep credentials out of the repository.
-7. Complete [standalone host/identity integration](OPERATIONS.md#standalone-client-hosting), bind the deployed Worker to this D1 as `DB`, configure its session secret and run client acceptance in staging. Repeat the provisioning procedure with a separate production database only after acceptance.
+7. Complete [private standalone deployment](CLOUDFLARE_DEPLOY.md), bind the deployed Worker to this D1 as `DB`, configure its session secret and run client acceptance in staging. Repeat the provisioning procedure with a separate production database only after acceptance.
 
 The cloud commands intentionally use `--remote`. They create/query/change client cloud resources and must be run by an authorized operator. They were not executed against a client account during this handover.
 
