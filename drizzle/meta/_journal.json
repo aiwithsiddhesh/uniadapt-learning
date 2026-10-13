@@ -1,0 +1,55 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1791830991082,
+      "tag": "0000_closed_vin_gonzales",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1791833405643,
+      "tag": "0001_shallow_hawkeye",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1791858574344,
+      "tag": "0002_green_rictor",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1791861234396,
+      "tag": "0003_lonely_hobgoblin",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1791863429253,
+      "tag": "0004_rainy_white_tiger",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1791865584429,
+      "tag": "0005_deep_abomination",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1791865828148,
+      "tag": "0006_outgoing_miracleman",
+      "breakpoints": true
+    }
+  ]
+}

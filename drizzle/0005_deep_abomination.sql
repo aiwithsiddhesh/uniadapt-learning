@@ -1,0 +1,1 @@
+ALTER TABLE `academic_timetables` ADD `teacher_ids` text DEFAULT '[]' NOT NULL;
