@@ -2,7 +2,7 @@
 
 ## Evidence and its limits
 
-The M01–M04 implementation baseline passed **106 automated tests**, TypeScript checks, the production build and live read-only health/authentication-boundary probes on 13 October 2026. Automated tests use synthetic data; SQLite fixtures approximate D1 transactions. A 2,000-record foundation test verifies import/allocation and bounded statements, not production throughput or 2,000 simultaneous learners.
+The current M01–M04 source passed **124 automated tests**, TypeScript and the production build on 13 October 2026. Live read-only probes from the earlier Site release are historical evidence, not verification of the new cloud deployment. Automated tests use synthetic data; SQLite fixtures approximate D1 transactions. A 2,000-record foundation test verifies import/allocation and bounded statements, not production throughput or 2,000 simultaneous learners.
 
 This handover adds and checks local setup helpers, migration commands and documentation examples. Browser/manual client UAT, accessibility, penetration assessment, real external infrastructure and production concurrency/performance remain unverified. Record new results against the exact GitHub commit; do not copy the baseline as evidence for a different deployment.
 
@@ -16,16 +16,17 @@ pnpm typecheck
 pnpm build
 ```
 
-Expected: all 106 current tests pass, typecheck exits zero and build produces the Worker/client output. Node warnings about experimental/native APIs are not by themselves test failures; inspect exit code and failure summary. `pnpm lint` is available for an additional review, but no passing lint baseline is claimed. No Playwright browser suite or coverage-percentage threshold is supplied.
+Expected: all 124 current tests pass, typecheck exits zero and build produces the Worker/client output. Node warnings about experimental/native APIs are not by themselves test failures; inspect exit code and failure summary. `pnpm lint` is available for an additional review, but no passing lint baseline is claimed. No Playwright browser suite or coverage-percentage threshold is supplied.
 
 | Suite | What it verifies |
 |---|---|
 | `tests/access.test.mts` | Sessions, revocation, role/owner authorization, question release and assigned assessment boundaries |
-| `tests/academic.test.mts` | Academic paths, offerings, ownership, weights, allocation/capacity and history |
+| `tests/academic.test.mts` | Academic paths, offerings, ownership, wnines, allocation/capacity and history |
 | `tests/foundation.test.mts` | M01–M04 additions: accounts/tokens, CSV, atomic rollback, bulk transfer/closure, Unit versions, calendar/DST/deadlines and 2,000-record foundation data |
 | `tests/scope.test.mts` | Historical Teacher cannot access transferred Student's new Section/preferences/unassigned deficit |
 | `tests/migration.test.mts` | Existing accounts/tokens/academic references survive additive upgrades; foreign keys remain valid |
 | `tests/dashboard.test.mts` | Server-rendered role navigation excludes other workspaces; not click/visual browser testing |
+| `tests/supabase.test.mts` | Production config, signed identity, reserved UUID provisioning/retry, no provider-role trust, reset races/outages, Admin changes and bootstrap compensation |
 | `tests/standalone.test.mts` | Protected/atomic bootstrap, concurrent initialization, verified private JWT gateway and no public/preview defaults |
 | `tests/learning.test.mts` | Existing objective practice, evidence, planning, approval, note helper and persistence/revision behavior |
 
@@ -52,16 +53,13 @@ With the local dev server running, open `/api/health` on its printed local origi
 {
   "status": "ready",
   "storage": "connected",
-  "assessment": "passed",
-  "planning": "passed",
-  "roles": "passed",
-  "authentication": "passed",
-  "academicEnrollment": "passed",
-  "calendar": "passed"
+  "authentication": "local-development",
+  "foundation": "M01–M04",
+  "verification": "Release tests and role acceptance are separate from readiness."
 }
 ```
 
-The probe checks table presence and synthetic runtime/domain fixtures; it does not authenticate real role accounts or verify browser workflows, backups or load. A 503 is not ready. On the cloud Worker the outer Cloudflare Access gate still applies; do not circulate internal bypass credentials to run health checks.
+Cloud configuration reports `authentication: "supabase-configured"`. Health checks table/column presence and required configuration only; it does not contact Supabase or prove credentials, role workflows, backups or performance. A 503 is not ready. The cloud Access gate applies to health too. Do not infer that M01–M04 is accepted from this response.
 
 Without an institution session, `/api/academic`, `/api/accounts` and `/api/campus` should return 401 after reaching the app. A logged-in Teacher/Student should receive 403 for Admin academic/account routes. The private Access gate can intercept requests earlier, so distinguish platform access denial from an application status.
 

@@ -40,9 +40,9 @@ Open **Academic structure → 2. Subject catalogue**. Select Program and Semeste
 - **Core Lab:** included in official academic/timetable commitments; excluded from adaptive theory topic planning.
 - **Elective:** assigned by Admin, within the correct group and capacity. Required groups need exactly one eligible choice per Student.
 
-Enter Unit weights using one line per Unit, such as `Unit 1 | 60` and `Unit 2 | 40`. Each weight is 0–100 and the total must be 100. Optional starter material is copied into an unapproved review draft.
+Enter Unit wnines using one line per Unit, such as `Unit 1 | 60` and `Unit 2 | 40`. Each wnine is 0–100 and the total must be 100. Optional starter material is copied into an unapproved review draft.
 
-Editing Units creates a new policy version. Existing approved material retains its old reference until the Subject Owner reviews/activates the replacement draft. Do not interpret the new catalogue weight as already activated for Students.
+Editing Units creates a new policy version. Existing approved material retains its old reference until the Subject Owner reviews/activates the replacement draft. Do not interpret the new catalogue wnine as already activated for Students.
 
 ### 4. Section offerings and ownership
 
@@ -92,7 +92,7 @@ Prior enrollments close and assessment/history data remain intact. A live incomp
 ## Teacher workflow
 
 1. Activate the account and sign in. Only assigned offerings/Students appear.
-2. Choose the correct offering/Section in **Curriculum & materials**. Add/edit topic title, estimated hours, Unit, exam weight, prerequisite links and notes. Import `.txt`/`.md` notes when useful; PDF/OCR upload is not implemented.
+2. Choose the correct offering/Section in **Curriculum & materials**. Add/edit topic title, estimated hours, Unit, exam wnine, prerequisite links and notes. Import `.txt`/`.md` notes when useful; PDF/OCR upload is not implemented.
 3. The Subject Owner reviews and approves the curriculum. Assigned CO/other PRIMARY Teachers can edit drafts but cannot activate shared artifacts.
 4. Under **Question bank**, author four-choice single-correct objective questions with difficulty and explanation. Every topic needs at least one Easy, Medium and Hard item before current bank approval. This is the current minimum, not the full future SRS quality/exposure policy.
 5. The Owner approves the bank after curriculum review. Later edits form replacement drafts; inspect the pending material before reactivation.

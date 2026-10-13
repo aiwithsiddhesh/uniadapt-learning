@@ -1,8 +1,8 @@
 # Private standalone hosting from GitHub
 
-**Target:** GitHub source → Cloudflare Workers application → client-owned D1, with owner-only Cloudflare Access. This code no longer requires ChatGPT Sites headers or sign-in. **Cloud deployment status: not deployed; client Cloudflare account access and resource configuration are required.**
+**Target:** GitHub source → Cloudflare Workers → D1 academic data + Supabase Auth, with owner-only Cloudflare Access. This code no longer requires ChatGPT Sites headers or sign-in. **Status: D1 and owner-only Access policy are provisioned; Supabase project and Worker deployment remain pending. No working external URL yet.** See [actual deployment record](DEPLOYMENT_STATUS.md).
 
-Dashboard instructions and provider prices were checked against official Cloudflare documentation on **13 October 2026**. The commands match this repository. They have not yet been executed against a client Cloudflare account; provider deployment and browser acceptance remain pending.
+Dashboard instructions and provider prices were checked against official Cloudflare documentation on **13 October 2026**. The commands match this repository. D1 migrations and Access configuration were executed through the connected account. Worker upload, real Supabase login, browser acceptance and runtime cost validation remain pending.
 
 If you are setting up the account for a maintainer to deploy, complete **steps 1–3** first. Steps **4–10** cover the application deployment. Creating an account does not automatically provide access to the maintainer's execution environment; arrange authenticated access through the approved account/browser workflow. Do not send passwords, OTPs, recovery codes or API tokens in chat or GitHub issues.
 
@@ -15,7 +15,7 @@ If you are setting up the account for a maintainer to deploy, complete **steps 1
 - [4. Prepare your computer and authenticate Wrangler](#4-prepare-your-computer-and-authenticate-wrangler)
 - [5. Create D1 and configure the application](#5-create-d1-and-configure-the-application)
 - [6. Build and upload with the visitor URL disabled](#6-build-and-upload-with-the-visitor-url-disabled)
-- [7. Configure the two server secrets](#7-configure-the-two-server-secrets)
+- [7. Configure the three server secrets](#7-configure-the-three-server-secrets)
 - [8. Protect the Worker and configure Access settings](#8-protect-the-worker-and-configure-access-settings)
 - [9. Enable the protected URL and initialize UniAdapt](#9-enable-the-protected-url-and-initialize-uniadapt)
 - [10. Verify the deployment](#10-verify-the-deployment)
@@ -25,16 +25,18 @@ GitHub Pages is static hosting and cannot execute the Worker APIs, D1 transactio
 
 ## Resources and cost decision
 
-You need one authorized Cloudflare account, one Worker, one D1 database and one Access application/policy. No paid domain is required for an initial private `workers.dev` endpoint. Institutional passwords/JWTs are handled by the application; Access separately restricts who can reach it.
+You need one authorized Cloudflare account, one Worker, one D1 database, one Access application/policy and one dedicated Supabase Free project. No paid domain is required for an initial private `workers.dev` endpoint. Supabase handles passwords. The application handles role-scoped four-hour sessions; Access restricts who can reach the website.
 
-Workers Paid currently has a $5/month minimum plus applicable usage. Workers Free permits only 10 ms CPU/request. This app performs bcrypt cost-10 password hashing and substantial domain/planning work, so this guide plans for Paid rather than claiming it fits Free. Local timing is not a deployed CPU benchmark; validate real Worker CPU and database usage before client rollout. The account owner must approve/select any paid plan; no plan purchase or cloud resource creation was performed while preparing this source.
+The requested initial target is **Workers Free + D1 Free + Zero Trust Free + Supabase Free**, without a paid domain. No paid subscription is authorized or selected. Supabase removes bcrypt password processing from Worker requests, but server rendering and academic operations still need real CPU measurement. Workers Free permits 10 ms CPU/request and 100,000 requests/day; a passing local test/build is not proof that every route fits this limit. If a Free limit prevents a workflow, keep the pilot private and report/optimize it before proposing a paid upgrade.
 
+Entry subscriptions are $0 within Free allowances. Supabase may pause after inactivity; D1/request/auth allowances also apply. Account billing was not accessible through the Cloudflare connector, so verify the actual selected subscription in the dashboard. No automatic $0-cost or availability guarantee is made.
 See [Workers pricing](https://developers.cloudflare.com/workers/platform/pricing/), [CPU limits](https://developers.cloudflare.com/workers/platform/limits/), [private workers.dev access](https://developers.cloudflare.com/workers/configuration/routing/workers-dev/) and [Access JWT validation](https://developers.cloudflare.com/cloudflare-one/access-controls/applications/http-apps/authorization-cookie/validating-json/).
 
 | Resource | Purpose | Initial setup |
 |---|---|---|
-| Workers Paid | Runs the UI, APIs and password authentication | $5/month minimum plus applicable usage; selected by the account owner |
-| D1 | Stores accounts and application records | Included usage allowances; usage above the allowance can add charges |
+| Workers Free | Runs UI and APIs; passwords processed remotely | $0 entry tier; CPU/request quotas require deployed measurement |
+| D1 Free | Stores account authorization and academic records | Free allowance; review row read/write and storage quotas |
+| Supabase Free | Managed passwords and signed identity | Dedicated Free project; no paid branching/compute |
 | Zero Trust Free / Access | Restricts website visitors to approved identities | Select Free during Zero Trust onboarding; payment details are still requested |
 | `workers.dev` hostname | Provides the first URL | Use the account subdomain; no domain purchase needed |
 | GitHub repository | Stores source and documentation | Existing private repository; initial deployment uses Wrangler |
@@ -53,12 +55,11 @@ Hosting does not enable the pending AI functionality. No AI API provider is requ
 
 ## 2. Prepare Workers hosting and billing
 
-1. Open **Workers & Pages** in the selected account.
-2. Review the account's Workers subscription and follow the upgrade option for **Workers Paid** when you are ready to incur its charge. This is the Workers subscription, separate from a domain/website plan.
-3. Review the minimum charge and usage rates before confirming. This build is planned for Paid because its bcrypt authentication cannot be assumed to fit Free's 10 ms CPU limit. Actual deployed CPU must still be measured.
-4. In Workers & Pages, find **Your subdomain**. Keep the assigned account subdomain or use **Change** to choose an available one.
-5. Record that subdomain. The eventual URL will have the form `https://uniadapt-learning.YOUR_SUBDOMAIN.workers.dev`.
-
+1. Open **Workers & Pages** in the intended account.
+2. Check that **Workers Free** is selected. Do not follow an upgrade prompt or buy a domain.
+3. Find **Your subdomain**. Keep the existing account subdomain; changing it can affect unrelated Workers.
+4. Record the subdomain. The eventual URL pattern is `https://uniadapt-learning.YOUR_SUBDOMAIN.workers.dev`.
+5. Before wider use, measure CPU and quota use for SSR, login, import, allocation and calendar saves. No paid upgrade should occur without explicit approval.
 The hostname above is a pattern, not an existing working URL. Do not create or publish a sample application as a substitute for this build.
 
 **Expected result:** Workers is available in the correct account, with the intended subscription/subdomain. D1 and the application still need to be configured.
@@ -69,7 +70,7 @@ The hostname above is a pattern, not an existing working URL. Do not create or p
 2. Complete organization onboarding: choose an available team name, select **Free**, and provide payment details when requested. Cloudflare documents that payment details are required even for Zero Trust Free, without a charge for that Free subscription.
 3. Record the team origin, for example `https://YOUR_TEAM.cloudflareaccess.com`. It is different from your `workers.dev` account subdomain.
 4. Add email-code login: **Zero Trust → Integrations → Identity providers → Add new identity provider → One-time PIN**. Save it.
-5. Keep the exact email that should be allowed into the private UniAdapt website. The application policy is created in step 8 after the Worker exists.
+5. Keep the exact email that should be allowed into the private UniAdapt website. The current account already has an exact-hostname owner-only policy; verify it and protect all Worker traffic in step 8 after upload. Do not create duplicate resources.
 
 New organizations currently default to Cloudflare's identity provider; email PIN login must be added explicitly if you want that method. No device client, VPN or Tunnel is needed for this Worker website.
 
@@ -109,7 +110,7 @@ pnpm exec wrangler whoami
 
 ## 5. Create D1 and configure the application
 
-Create a **fresh** database, choosing one of these methods:
+Check [the actual resource record](DEPLOYMENT_STATUS.md) first: the current D1 database is already created and migrated. For this account, reuse that recorded ID without creating another database. For a different authorized environment, create a **fresh** database using one method:
 
 - CLI: run `pnpm exec wrangler d1 create uniadapt-staging`. If prompted to modify the repository configuration automatically, decline and apply the binding explicitly below.
 - Dashboard: open **D1 SQL database**, select **Create Database**, enter `uniadapt-staging`, then select **Create**. Copy the database ID from the new database's details.
@@ -135,6 +136,8 @@ Edit the ignored **`wrangler.client.json`** at the repository root. Replace the 
   "preview_urls": false,
   "assets": {"run_worker_first": true},
   "vars": {
+    "SUPABASE_URL": "",
+    "SUPABASE_PUBLISHABLE_KEY": "",
     "UNIADAPT_ACCESS_ISSUER": "",
     "UNIADAPT_ACCESS_AUDIENCE": "",
     "UNIADAPT_ALLOWED_EMAILS": ""
@@ -148,7 +151,7 @@ Edit the ignored **`wrangler.client.json`** at the repository root. Replace the 
 }
 ```
 
-If necessary, add `"account_id": "YOUR_SELECTED_CLOUDFLARE_ACCOUNT_ID"` as a top-level property. The example ID is a placeholder and must be replaced. Do not add a `DATABASE_URL` or Supabase key: this build uses the D1 binding named exactly **`DB`**.
+If necessary, add `"account_id": "YOUR_SELECTED_CLOUDFLARE_ACCOUNT_ID"` as a top-level property. The example ID is a placeholder and must be replaced. Keep the D1 binding named exactly **`DB`**. Do not add a `DATABASE_URL`: academic data stays in D1. Complete [Supabase project/key setup](SUPABASE_SETUP.md), then add only its URL and modern publishable key to `vars`; its secret key belongs in Worker secret storage.
 
 Apply the delivered migrations and check the remote tables:
 
@@ -157,7 +160,7 @@ pnpm exec wrangler d1 migrations apply DB --remote --config wrangler.client.json
 pnpm exec wrangler d1 execute DB --remote --config wrangler.client.json --command "SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name"
 ```
 
-Confirm you are targeting the new database before accepting the migration prompt. Expect the 25 application tables plus any provider/migration internal tables. Do not paste illustrative tutorial tables into the database; this repository's migrations define the application schema.
+Confirm you are targeting the new database before accepting the migration prompt. Expect all nine migrations and the 25 application tables plus any provider/migration internal tables. Do not paste illustrative tutorial tables into the database; this repository's migrations define the application schema.
 
 This creates a fresh environment. It does not move or delete data from the old private Site. Existing institutional records require a separate authorized full export/import, with IDs/history and backup validation. See [database operations](DATABASE.md).
 
@@ -177,16 +180,17 @@ pnpm exec wrangler deploy --config dist/server/wrangler.json
 
 The generated config connects both the compiled server and built assets. Deploy **`dist/server/wrangler.json`**, not the unbuilt source template. In **Workers & Pages**, confirm `uniadapt-learning` exists, its D1 binding is `DB`, and the default route/preview URLs remain disabled. The initial upload is not a usable visitor deployment.
 
-## 7. Configure the two server secrets
+## 7. Configure the three server secrets
 
-Through the authorized Cloudflare secret interface/CLI, set independent random values of at least 32 characters:
+Through the authorized Cloudflare secret interface/CLI, set two independent random application secrets of at least 32 characters, and the dedicated Supabase modern secret key:
 
 ```bash
 pnpm exec wrangler secret put UNIADAPT_AUTH_SECRET --config wrangler.client.json
 pnpm exec wrangler secret put UNIADAPT_BOOTSTRAP_TOKEN --config wrangler.client.json
+pnpm exec wrangler secret put SUPABASE_SECRET_KEY --config wrangler.client.json
 ```
 
-Generate **two different random values**, for example two 64-character random secrets in your password manager. The CLI securely prompts for each value; do not put them in Git or command-line arguments. Do not reuse the example/local `.dev.vars` values for cloud hosting. Verify secret names without exposing values:
+Generate **two different random values**, for example two 64-character random secrets in your password manager. The CLI securely prompts for each value; do not put them in Git or command-line arguments. Do not reuse the example/local `.dev.vars` values for cloud hosting. Use the actual `sb_secret_…` value from the dedicated Supabase project for the third secret, not a generated placeholder. Verify all three names without exposing values:
 
 ```bash
 pnpm exec wrangler secret list --config wrangler.client.json
@@ -194,7 +198,7 @@ pnpm exec wrangler secret list --config wrangler.client.json
 
 Store the bootstrap token privately for first-Admin initialization. `UNIADAPT_AUTH_SECRET` signs the four-hour institution sessions. The bootstrap token is checked only while no institution root exists; subsequent initialization is blocked. Retain both in the first deployment; agree rotation/recovery handling with the operator. This release does not provide a production Admin break-glass recovery flow.
 
-**Expected result:** Both named secrets exist on `uniadapt-learning`. Neither value appears in source, client JavaScript or documentation.
+**Expected result:** All three named secrets exist on `uniadapt-learning`. Neither value appears in source, client JavaScript or documentation.
 
 ## 8. Protect the Worker and configure Access settings
 
@@ -231,7 +235,7 @@ pnpm check:deployment
 pnpm exec wrangler deploy --config dist/server/wrangler.json
 ```
 
-**Expected result:** The saved Access application covers all Worker traffic and allows only the owner, and the deployed Worker has matching issuer/AUD/email settings plus both secrets. The visitor URL is still disabled.
+**Expected result:** The saved Access application covers all Worker traffic and allows only the owner, and the deployed Worker has matching issuer/AUD/email settings plus all three secrets. The visitor URL is still disabled.
 
 ## 9. Enable the protected URL and initialize UniAdapt
 
@@ -264,9 +268,9 @@ Complete the following before calling the deployment working/private:
 4. Create synthetic Teacher/Student accounts and verify their institutional role boundaries.
 5. Verify `/api/health` through Access and a 401 from protected domain routes without an institution session.
 6. Try an incognito/unauthorized identity: it must not receive HTML/app assets, health or domain data. Test actual Access token expiry/revocation and alternative URL/preview exposure.
-7. Record commit, generated config, DB/migration state, account Access policy, runtime CPU/latency and test results.
+7. Record commit, generated config, D1 migrations, Supabase reference and signing algorithm, account Access policy, runtime CPU/latency and test results. Do not record secret values.
 
-No real Cloudflare URL, policy, cost benchmark or client account acceptance is recorded yet. An operator must complete these steps before the deployment can be called working/private.
+The owner-only policy and migrated cloud D1 are recorded, but no working Worker URL, live provider login, CPU benchmark or client acceptance is recorded. Complete and record these remaining checks before calling the deployment working/private.
 
 Record results against this checklist; these are required checks, not claims of completed cloud testing:
 
@@ -312,9 +316,10 @@ If migrations are pending, create a backup and review compatibility using [datab
 | Access page sends no PIN | Enable One-time PIN for the app, confirm the exact email is allowed and check mail filtering; blocked emails receive no code |
 | App returns 503 for private access | Check issuer/AUD/allowlist settings and rebuild with the client config |
 | App returns 403 after Access sign-in | Check exact email, correct application AUD/team issuer, expired token and saved Access policy; do not disable the gate |
-| Institution initialization rejected | Check both server secrets, the private bootstrap token, password limits and whether initialization already occurred |
+| Institution initialization rejected | Check all three server secrets, active Supabase/asymmetric signing, the private bootstrap token, password limits and whether initialization already occurred |
 | Institution API returns 401 | Sign in to UniAdapt after Access; the two sessions are separate |
-| Password operation fails with CPU limit | Confirm Workers Paid is active; inspect provider CPU metrics/logs and investigate before rollout |
+| Request exceeds Free CPU limit | Inspect deployed CPU/logs and optimize the affected route; do not upgrade without approval |
+| Supabase login/setup returns 503 | Check active project, three provider settings, modern API keys and asymmetric signing; never disable private access or use local-password fallback |
 | URL appears unprotected or previews are enabled | Disable the route in the dashboard, keep it disabled in the client config, and fix/reverify Access before restoring it |
 
 For live logs, use **Workers & Pages → uniadapt-learning** and its logs/observability controls, or `pnpm exec wrangler tail --config wrangler.client.json`. Handle logs privately; do not copy credentials, real Student records or setup links into support issues. See [operations](OPERATIONS.md) for backup/restore and rollback.

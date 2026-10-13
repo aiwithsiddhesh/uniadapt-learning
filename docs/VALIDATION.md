@@ -30,3 +30,22 @@ The prior live version-4 readiness probe returned ready/connected and passed ass
 ## Standalone preparation update — 13 October 2026
 
 All 106 tests and standalone production build passed, including seven new bootstrap/private-gateway tests. Generated config disables public and preview URLs and uses Worker-first asset requests. The signing/gateway behavior is tested with synthetic keys/fixtures. No real Cloudflare deployment or Access policy has been created or accepted.
+
+
+## Managed-auth update — 13 October 2026
+
+| Check | Result | Evidence boundary |
+|---|---|---|
+| Current full suite | 124 passed; zero failed/skipped | Original 106 plus 18 managed-auth tests |
+| TypeScript and production build | Passed | Generated Worker environment types; Vinext UI/server output |
+| Setup/local migration | Passed | Ninth additive migration applied; local development provider explicit |
+| Local HTTP interaction smoke | Passed | HTML/readiness, anonymous API denial, Admin initialization/login, Teacher setup, Admin-route denial, single-use link, logout revocation and re-login |
+| Managed provider protocol | Passed with synthetic transport/ES256 keys | UUID creation/retry/delete, signed identity and metadata distrust, bounded/redacted provider failures |
+| Managed reset/races | Passed with synthetic provider | Outages, parallel claims, expired token, concurrent Admin changes, abandoned-claim replacement, late stale password writes, signed credential-generation matching and bootstrap compensation |
+| Remote D1 | Nine migrations, 25 app tables, zero foreign-key violations | Authenticated Cloudflare API; fresh dedicated database |
+| Private Access configuration | Owner-only exact-email policy and One-time PIN created | Future Worker hostname; no live Worker content exposed |
+| Live Supabase login / live product URL | Pending | Dedicated project creation unavailable through connector |
+| Browser click/visual acceptance | Pending | Cloud browser cannot reach the isolated local server; HTTP tests are not browser acceptance |
+| Workers Free CPU / real-provider latency | Pending | No deployed benchmark; do not infer Free suitability from local build/tests |
+
+The earlier standalone note above is historical. Actual current account/resource details and blockers are in [deployment status](DEPLOYMENT_STATUS.md). No paid plan was selected, no public route was enabled and no product deployment is claimed.

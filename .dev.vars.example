@@ -2,3 +2,10 @@
 # Production uses the hosting provider's secret store, not this file.
 UNIADAPT_AUTH_SECRET=
 UNIADAPT_BOOTSTRAP_TOKEN=
+
+# Enables local passwords only in a development build. Ignored in production.
+UNIADAPT_LOCAL_AUTH=true
+# Cloud production uses a dedicated Supabase project and server secrets.
+SUPABASE_URL=
+SUPABASE_PUBLISHABLE_KEY=
+SUPABASE_SECRET_KEY=

@@ -17,12 +17,12 @@ This package delivers source and operating documentation. It does not by itself 
 | Deliverable | Location / evidence |
 |---|---|
 | Application and role workspaces | `app/`, `lib/`, `components/` |
-| Academic/auth schema and seven migrations | `db/schema.ts`, `drizzle/` |
+| Academic/auth schema and nine migrations | `db/schema.ts`, `drizzle/` |
 | Dependency/build configuration | `package.json`, `pnpm-lock.yaml`, `vite.config.ts`, `build/`, `scripts/` |
-| Business test suite | `tests/`; 106 current tests (99 foundation/learning plus seven standalone gateway/bootstrap tests) |
+| Business test suite | `tests/`; 124 current tests (99 foundation/learning, seven standalone gateway/bootstrap and 18 managed-auth tests) |
 | Professional project entry point | `README.md` |
 | Setup and safe local configuration tools | `docs/SETUP.md`, `setup:local`, `check:setup`, local D1 commands |
-| External database and auth guides | `docs/DATABASE.md`, `docs/AUTHENTICATION.md`; non-secret templates |
+| External database and auth guides | `docs/DATABASE.md`, `docs/AUTHENTICATION.md`, `docs/SUPABASE_SETUP.md`; non-secret templates |
 | End-user operating guide | `docs/USER_GUIDE.md`, synthetic CSV example |
 | Testing / client acceptance plan | `docs/TESTING.md` and this record |
 | Deployment, backup and incident runbook | `docs/OPERATIONS.md` |
@@ -53,7 +53,7 @@ Accept the foundation against FR-AUTH-001..004 and FR-ADM-001..007 and the agree
 - [ ] Client product owner, institution Admin, maintainer and operations/data owners named.
 - [ ] Hosting strategy agreed: complete the prepared standalone Cloudflare deployment.
 - [ ] Client can reach the agreed private application and sign in; all three roles verified independently.
-- [ ] Database ownership/binding/schema and backup/export access recorded.
+- [ ] D1 and dedicated Supabase ownership/bindings and key administration recorded; backup/export access verified.
 - [ ] Secret ownership/rotation and account reset procedures agreed without publishing values.
 - [ ] First client academic hierarchy, catalogue, ownership and calendars approved.
 - [ ] Student import/elective/transfer workflow tested with synthetic and then approved client data.
@@ -79,7 +79,7 @@ Names, support hours and response times are intentionally unspecified until agre
 
 ## Priority gaps before broad production use
 
-Host/client-access ownership; operational backup restore; independent security/browser/accessibility tests; realistic storage/concurrency validation; documented Admin recovery; complete clean-data/retention controls. Standalone identity/Worker code is prepared; actual account, private Access policy, resources and deployment remain pending. Follow the standalone guide. Broader product scope additionally needs all pending agents and M05–M18 requirements.
+Host/client-access ownership; operational backup restore; independent security/browser/accessibility tests; realistic storage/concurrency validation; documented Admin recovery; complete clean-data/retention controls. Standalone identity/Worker code is prepared; D1 and owner-only Access are provisioned; dedicated Supabase project, server secrets and Worker deployment remain pending. Follow the standalone guide. Broader product scope additionally needs all pending agents and M05–M18 requirements.
 
 ## Sign-off template
 

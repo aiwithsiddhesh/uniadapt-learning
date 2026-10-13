@@ -7,9 +7,10 @@ flowchart TD
   B["Browser: role workspace"] --> G["Cloudflare Access gate"]
   G --> W["Worker: routes, session and domain rules"]
   W --> D["D1: accounts, academic records and learning cache"]
+  W --> S["Supabase Auth: passwords and signed identity"]
 ```
 
-The UI is React/TypeScript with Next-style app routes, compiled using Vinext/Vite to Cloudflare Workers. API code imports `cloudflare:workers` bindings. The Worker verifies Cloudflare Access tokens and explicit allowed emails. Local development bypasses that outer gate only on loopback. Institution passwords/JWTs are handled by UniAdapt; no ChatGPT identity is required.
+The UI is React/TypeScript with Next-style app routes, compiled using Vinext/Vite to Cloudflare Workers. API code imports `cloudflare:workers` bindings. The Worker verifies Cloudflare Access tokens and explicit allowed emails. Local development bypasses that outer gate only on loopback. Supabase handles cloud passwords. UniAdapt verifies the signed provider identity, discards provider tokens, and issues its own four-hour HttpOnly session. D1 controls roles, academic scope and immediate session revocation. No ChatGPT identity is required.
 
 The server resolves institution sessions and validates roles/references before mutations. Teacher/Student data reads use SQL projections and response shaping for authorized records. Learning state remains in a bounded JSON cache; academic/auth records are normalized. Stale revision checks and operation-marker guards protect bulk writes; immutable Unit/calendar snapshots preserve earlier policies.
 
@@ -18,7 +19,7 @@ The server resolves institution sessions and validates roles/references before m
 | Layer | Files | Responsibilities |
 |---|---|---|
 | UI | `auth-gate.tsx`, `campus-app.tsx`, `academic-setup.tsx`, `foundation-tools.tsx`, `account-controls.tsx` | Sign-in and role-specific interactive flows |
-| Access/session | `private-access.ts`, `bootstrap.ts`, `auth.ts`, `access.ts`, `scoped-store.ts`, `account-admin.ts` | Private Access gateway, protected bootstrap, JWT, accounts and scope |
+| Access/session | `private-access.ts`, `supabase-auth.ts`, `runtime-auth.ts`, `bootstrap.ts`, `auth.ts`, `access.ts`, `scoped-store.ts`, `account-admin.ts` | Private Access gateway, protected bootstrap, JWT, accounts and scope |
 | Academic | `academic.ts`, `academic-store.ts`, `calendar.ts`, `student-import.ts` | Structure, assignments, allocation, versioning, timetable/exams and import |
 | Learning | `engine.ts`, `grading.ts`, `store.ts`, `types.ts` | Existing objective assessment, evidence, eligibility, planning and cache |
 | Persistence | `db/schema.ts`, `drizzle/*.sql` | Application schema/migrations |
@@ -40,7 +41,7 @@ All bodies/responses are JSON except standard HTML/redirect behavior for `/`. Ap
 | `POST /api/academic` | Admin session | `{revision, action}` with academic action `type` |
 | `GET /api/campus` | Institution session | Role-scoped state, revision and principal |
 | `POST /api/campus` | Institution session + action/scope authorization | `{revision, action}`; course/learner/session operations |
-| `GET /api/health` | Private gateway; no additional institution role check inside route | Read-only synthetic readiness probe; do not expose freely after a host migration without reviewing access |
+| `GET /api/health` | Private gateway; no additional institution role check inside route | Read-only schema/configuration readiness; do not expose freely after a host migration without reviewing access |
 
 The standalone Worker verifies the private gateway for HTML, APIs and assets. Domain routes additionally verify institution JWTs and role scope. Session entry no longer trusts native Sites headers.
 

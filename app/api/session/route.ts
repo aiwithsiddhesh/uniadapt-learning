@@ -1,10 +1,10 @@
 import {env} from 'cloudflare:workers';
 import {authenticate,institution,readCookie,sessionCookie,clearCookie,login,logout,acceptInvitation} from '../../../lib/auth';
-import type {AuthConfig} from '../../../lib/access-types';
+import {runtimeAuth} from '../../../lib/runtime-auth';
 import {initializeInstitution} from '../../../lib/bootstrap';
 import {ProductError} from '../../../lib/engine';
 export const dynamic='force-dynamic';
-const config=():AuthConfig=>({secret:env.UNIADAPT_AUTH_SECRET||'',issuer:'uniadapt-learning'});
+const config=()=>runtimeAuth(env,import.meta.env.DEV);
 const json=(body:unknown,status=200,cookie?:string)=>Response.json(body,{status,headers:{'Cache-Control':'no-store',...(cookie?{'Set-Cookie':cookie}:{})}});
 export async function GET(request:Request){try{if(!env.DB)return json({error:'Storage unavailable.'},503);const root=await institution(env.DB);let user=null;try{user=await authenticate(env.DB,readCookie(request),config());}catch{}return json({user,needsSetup:!root,ownerName:'',ownerEmail:''});}catch{return json({error:'Unable to open sign-in.'},503);}}
 export async function POST(request:Request){try{

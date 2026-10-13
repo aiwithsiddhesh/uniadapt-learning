@@ -40,9 +40,14 @@ export async function login(db:D1Database,emailValue:unknown,passwordValue:unkno
  const identity=typeof emailValue==='string'&&emailValue.trim().length<=254?emailValue.trim().toLowerCase():'invalid@example.invalid',password=typeof passwordValue==='string'?passwordValue:'',root=await institution(db);
  const account=root?await db.prepare('SELECT * FROM accounts WHERE campus_id = ? AND (email = ? OR username = ?)').bind(root.campus_id,identity,identity).first<Account>():null;
  const email=account?.email||identity;await checkThrottle(db,email,ip,now);
- const hash=account?.password_hash||'$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy';const valid=enc.encode(password).length<=72&&await bcrypt.compare(password,hash);
- if(!account||!account.active||!account.password_hash||!valid){await failed(db,email,ip,now);throw new ProductError('Invalid email or password.',401);}
- await db.prepare('DELETE FROM auth_limits WHERE key = ?').bind('account:'+await tokenHash(email)).run();await authAudit(db,account.campus_id,account.id,'Successful institutional sign-in.',now);return {user:principal(account),token:await signSession(account,config,now)};
+ let valid=false;
+ if(config.provider){if(account?.active&&account.auth_provider_user_id&&account.auth_provider_generation&&enc.encode(password).length<=72)valid=await config.provider.verify(account.auth_provider_user_id,account.email,password,account.auth_provider_generation);}
+ else{const hash=account?.password_hash||'$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy';valid=enc.encode(password).length<=72&&await bcrypt.compare(password,hash);}
+ if(!account||!account.active||!valid){await failed(db,email,ip,now);throw new ProductError('Invalid email or password.',401);}
+ // An Admin may edit/revoke the account while the remote provider is working.
+ const current=await db.prepare('SELECT * FROM accounts WHERE id = ? AND campus_id = ?').bind(account.id,account.campus_id).first<Account>();
+ if(!current||!current.active||current.token_version!==account.token_version||current.email!==account.email||current.auth_provider_user_id!==account.auth_provider_user_id||current.auth_provider_generation!==account.auth_provider_generation)throw new ProductError('Account changed while signing in. Sign in again.',401);
+ await db.prepare('DELETE FROM auth_limits WHERE key = ?').bind('account:'+await tokenHash(email)).run();await authAudit(db,current.campus_id,current.id,'Successful institutional sign-in.',now);return {user:principal(current),token:await signSession(current,config,now)};
 }
 export async function logout(db:D1Database,user:Principal,now=new Date()){await db.prepare('UPDATE accounts SET token_version = token_version + 1 WHERE id = ?').bind(user.id).run();await authAudit(db,user.campusId,user.id,'Signed out and revoked existing sessions.',now);}
 export async function createInvitation(db:D1Database,user:Principal,accountId:string,purpose:'setup'|'reset',now=new Date()){
@@ -54,8 +59,40 @@ export async function acceptInvitation(db:D1Database,tokenValue:unknown,password
  const token=typeof tokenValue==='string'?tokenValue:'',hash=await tokenHash(token);
  const row=await db.prepare('SELECT t.account_id,t.purpose,t.expires_at,a.email FROM auth_tokens t JOIN accounts a ON a.id = t.account_id WHERE t.hash = ?').bind(hash).first<{account_id:string;purpose:string;expires_at:number;email:string}>();const identity=row?.email||'token:'+hash;await checkThrottle(db,identity,ip,now);
  if(!row||row.expires_at<=now.getTime()){await failed(db,identity,ip,now);throw new ProductError('This setup/reset link is invalid or expired.',400);}try{checkPassword(passwordValue);}catch(e){await failed(db,identity,ip,now);throw e;}
+ if(config.provider)return acceptProviderInvitation(db,hash,row.account_id,passwordValue,config,now);
  const password=await passwordHash(passwordValue);
  const operation=crypto.randomUUID(),guard='EXISTS (SELECT 1 FROM security_audit WHERE id = ?)';
  const results=await db.batch<Account>([db.prepare('INSERT INTO security_audit (id,campus_id,actor_id,action,created_at) SELECT ?,a.campus_id,a.id,?,? FROM accounts a JOIN auth_tokens t ON t.account_id = a.id WHERE t.hash = ? AND t.expires_at > ?').bind(operation,'Completed account setup/reset; existing sessions revoked.',now.toISOString(),hash,now.getTime()),db.prepare(`UPDATE accounts SET password_hash = ?, active = 1, token_version = token_version + 1 WHERE id = ? AND ${guard} RETURNING *`).bind(password,row.account_id,operation),db.prepare(`DELETE FROM auth_tokens WHERE account_id = ? AND ${guard}`).bind(row.account_id,operation)]);
  const account=results[1]?.results?.[0];if(!account){await failed(db,identity,ip,now);throw new ProductError('This setup/reset link is invalid or expired.',400);}return {user:principal(account),token:await signSession(account,config,now)};
+}
+
+async function acceptProviderInvitation(db:D1Database,hash:string,accountId:string,password:string,config:AuthConfig,now:Date){
+ const started=Date.now(),claim=crypto.randomUUID(),account=await db.prepare('SELECT * FROM accounts WHERE id = ?').bind(accountId).first<Account>();
+ if(!account)throw new ProductError('This setup/reset link is invalid or expired.',400);
+ const providerId=account.auth_provider_user_id||account.id;
+ const claimed=await db.batch<Account>([
+  db.prepare('UPDATE auth_tokens SET claim_id = ?, claim_version = ? WHERE hash = ? AND expires_at > ? AND claim_id IS NULL AND EXISTS (SELECT 1 FROM accounts WHERE id = ? AND token_version = ?)').bind(claim,account.token_version+1,hash,now.getTime(),account.id,account.token_version),
+  db.prepare('UPDATE accounts SET active = 0, token_version = token_version + 1, auth_provider_user_id = ? WHERE id = ? AND EXISTS (SELECT 1 FROM auth_tokens WHERE hash = ? AND claim_id = ?) RETURNING *').bind(providerId,account.id,hash,claim)
+ ]);
+ const pending=claimed[1]?.results?.[0];if(!pending)throw new ProductError('This setup/reset link is invalid, expired or already being used.',400);
+ try{
+  const result=await config.provider!.provision(providerId,pending.email,password,claim);
+  if(result.id!==providerId)throw new ProductError('Authentication identity does not match this account.',503);
+  if(!await config.provider!.verify(providerId,pending.email,password,claim))throw new ProductError('Authentication identity could not be verified.',503);
+  const completed=new Date(now.getTime()+Math.max(0,Date.now()-started)),operation=crypto.randomUUID();
+  const guard='EXISTS (SELECT 1 FROM security_audit WHERE id = ?)';
+  const rows=await db.batch<Account>([
+   db.prepare('INSERT INTO security_audit (id,campus_id,actor_id,action,created_at) SELECT ?,a.campus_id,a.id,?,? FROM accounts a JOIN auth_tokens t ON t.account_id = a.id WHERE t.hash = ? AND t.claim_id = ? AND t.expires_at > ? AND a.token_version = t.claim_version').bind(operation,'Completed managed account setup/reset; earlier sessions revoked.',completed.toISOString(),hash,claim,completed.getTime()),
+   db.prepare(`UPDATE accounts SET password_hash = NULL, active = 1, token_version = token_version + 1, auth_provider_generation = ? WHERE id = ? AND token_version = ? AND ${guard} RETURNING *`).bind(claim,account.id,pending.token_version,operation),
+   db.prepare(`DELETE FROM auth_tokens WHERE account_id = ? AND ${guard}`).bind(account.id,operation)
+  ]);
+  const ready=rows[1]?.results?.[0];if(!ready)throw new ProductError('Account changed or the link expired during setup. Ask your Admin for a new link.',409);
+  return {user:principal(ready),token:await signSession(ready,config,completed)};
+ }catch(error){
+  // A provider timeout may occur after its password was changed. Keep the
+  // account inactive and old sessions revoked; release the claim for a retry.
+  // Admin edits/deactivation delete the token and cannot be undone here.
+  await db.prepare('UPDATE auth_tokens SET claim_id = NULL, claim_version = NULL WHERE hash = ? AND claim_id = ?').bind(hash,claim).run();
+  throw error;
+ }
 }

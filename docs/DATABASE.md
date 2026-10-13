@@ -4,7 +4,7 @@
 
 The application uses Cloudflare **D1** through the server-side `env.DB` binding. D1 provides a SQLite-compatible data model in the Worker environment. `db/schema.ts` defines the schema; routes/domain stores use prepared SQL and D1 batches. A local SQLite/D1 simulation is used for development; Node's in-memory SQLite fixtures are used by automated tests.
 
-There is no database URL, Postgres driver, Supabase client or generic ORM adapter switch in this release. External D1 is the closest supported storage technology, and the standalone host code is prepared; actual client deployment remains pending.
+There is no academic database URL, Postgres driver or generic ORM adapter switch in this release. Supabase Auth is a server-side HTTPS password integration; academic data remains in D1. External D1 is the closest supported storage technology, and the standalone host code is prepared; actual client deployment remains pending.
 
 ## Application tables
 
@@ -21,7 +21,7 @@ These are **25 application tables**. Wrangler/provider migration metadata may ad
 
 Important storage boundaries:
 
-- Accounts store bcrypt hashes, not passwords. Setup/reset tokens are stored as hashes.
+- Cloud accounts store a unique Supabase user ID; their D1 password hash is null. Local development can use bcrypt. Legacy hashes are retained by migration and cleared after managed setup/reset. Setup/reset links are stored as hashes.
 - Academic records and immutable Unit/calendar snapshots are normalized.
 - Topics, questions, attempts, evidence, plans and other learning state remain in the `campuses.state` JSON cache. The save limit is **1,500,000 UTF-8 bytes**.
 - The current runtime supports one default institution. A multi-institution SaaS tenancy model is not implemented.
@@ -104,6 +104,8 @@ The cloud commands intentionally use `--remote`. They create/query/change client
 | `0001_shallow_hawkeye.sql` | Institution accounts, token/throttle/audit data |
 | `0002_green_rictor.sql` | Academic hierarchy, subjects, assignments, enrollment and placement history |
 | `0003_lonely_hobgoblin.sql` through `0006_outgoing_miracleman.sql` | Additive M01–M04 foundation changes, including profile/username, Unit/calendar/timetable/exam and retained-placement fields |
+| `0007_supabase_auth.sql` | Unique managed identity mapping and transactional setup/reset claim guards; existing records retained |
+| `0008_credential_generation.sql` | Signed provider credential generation matching to reject delayed stale reset writes |
 
 Read the SQL for exact column-level changes; migration names are generated identifiers. Never edit an already applied migration. Generate a new one with `pnpm db:generate`, review the schema/SQL together, test an existing-data upgrade and apply to staging before production.
 
@@ -131,4 +133,4 @@ For the existing Sites-managed database, obtain backup/export operations through
 
 ## PostgreSQL, Supabase or another database
 
-These require implementation work: replace D1 bindings and SQL adapters, port SQLite/JSON SQL and transaction guards, create provider-specific migrations, migrate normalized and cached learning data, and rerun all rollback/scope/concurrency tests. Supabase Auth is also a separate authentication integration; adding its URL/key does not enable it. Do not describe either migration as supported by an environment-variable change.
+These require implementation work: replace D1 bindings and SQL adapters, port SQLite/JSON SQL and transaction guards, create provider-specific migrations, migrate normalized and cached learning data, and rerun all rollback/scope/concurrency tests. Supabase Auth is now implemented separately; configure its three settings using [Supabase setup](SUPABASE_SETUP.md). This does not migrate academic data to Postgres. Do not describe either migration as supported by an environment-variable change.

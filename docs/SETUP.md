@@ -51,7 +51,7 @@ pnpm check:setup
 
 `check:setup` checks Node, installed framework tools, the local D1 binding, the secret's presence/minimum length and delivered migration files. It does not connect to a cloud provider, validate account access or prove the database is migrated.
 
-Cloudflare's development runtime reads `.dev.vars`; the file is ignored by Git. `.dev.vars.example` is intentionally blank and safe to commit. Do not use frontend-prefixed environment variables for authentication secrets. See [Cloudflare local variables documentation](https://developers.cloudflare.com/workers/local-development/environment-variables/).
+Cloudflare's development runtime reads `.dev.vars`; the file is ignored by Git. `.dev.vars.example` contains blank credentials and an explicit development-only local-auth flag; it is safe to commit. Do not use frontend-prefixed environment variables for authentication secrets. See [Cloudflare local variables documentation](https://developers.cloudflare.com/workers/local-development/environment-variables/).
 
 ## Prepare the local database
 
@@ -60,7 +60,7 @@ pnpm db:migrate:local
 pnpm db:check:local
 ```
 
-The first command applies the seven `drizzle/*.sql` migrations in order through Wrangler's migration tracker. Repeating it applies only outstanding migrations. The second lists tables. Expect the 25 application tables listed in [Database](DATABASE.md), plus provider/migration metadata tables.
+The first command applies the nine `drizzle/*.sql` migrations in order through Wrangler's migration tracker. Repeating it applies only outstanding migrations. The second lists tables. Expect the 25 application tables listed in [Database](DATABASE.md), plus provider/migration metadata tables.
 
 `wrangler.local.json` deliberately uses the same `DB` binding, database name and placeholder ID as `vite.config.ts`. Both use local persistence under `.wrangler/state`. The placeholder ID is for local simulation, not a real cloud database. Always keep `--local` on local administration commands.
 
@@ -90,7 +90,7 @@ pnpm typecheck
 pnpm build
 ```
 
-The current suite has 106 passing tests: 99 foundation/learning tests plus seven standalone bootstrap/access tests. `pnpm build` compiles the Worker/client bundle; it does not deploy. The [Testing guide](TESTING.md) separates automated evidence from remaining browser/client acceptance.
+The current suite has 124 passing tests: 99 foundation/learning tests, seven standalone bootstrap/access tests and 18 managed-auth tests. `pnpm build` compiles the Worker/client bundle; it does not deploy. The [Testing guide](TESTING.md) separates automated evidence from remaining browser/client acceptance.
 
 `pnpm start` runs the compiled production Worker locally. Production has no development gateway bypass; configured, verified Cloudflare Access tokens are required. Use `pnpm dev` for local product evaluation, and the standalone guide for private cloud deployment.
 
@@ -108,6 +108,9 @@ The current suite has 106 passing tests: 99 foundation/learning tests plus seven
 | `.openai/hosting.json` | Historical Site metadata | Not used by the standalone build |
 | `.sites-runtime/execution-profile.json` | Checkout-local Sites execution choice | Optional; clean clones default to portable |
 | AI provider variables | No code consumes an AI provider key | Not implemented |
+| `UNIADAPT_LOCAL_AUTH=true` | Explicit local bcrypt development; never a cloud fallback | Development only |
+| `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` | Dedicated Supabase project and modern public API key | Required in cloud production |
+| `SUPABASE_SECRET_KEY` | Server-only Supabase admin key | Cloudflare secret storage only |
 | `DATABASE_URL` | No code consumes a Postgres/Supabase URL | Unsupported |
 
 ## Troubleshooting

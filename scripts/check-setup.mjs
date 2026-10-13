@@ -19,7 +19,7 @@ try {
   const secret = text.match(/^UNIADAPT_AUTH_SECRET\s*=\s*(.+)$/m)?.[1]?.trim().replace(/^['"]|['"]$/g, '');
   add('Local authentication secret configured (value hidden)', Boolean(secret && secret.length >= 32));
 } catch { add('Local .dev.vars exists', false); }
-add('Seven delivered SQL migrations', readdirSync(file('drizzle')).filter(n => n.endsWith('.sql')).length >= 7);
+add('Nine delivered SQL migrations', readdirSync(file('drizzle')).filter(n => n.endsWith('.sql')).length >= 9);
 for (const c of checks) console.log(`${c.ok ? 'PASS' : 'FAIL'} ${c.label}`);
 console.log('Configuration check only: use db:check:local and /api/health to verify migrated storage and runtime behavior.');
 if (checks.some(c => !c.ok)) process.exitCode = 1;

@@ -30,14 +30,14 @@ The runtime secret is managed separately from source. A deployment does not crea
 
 ## Standalone client hosting
 
-**Status: standalone code prepared and tested; cloud deployment/account acceptance pending.** Follow [private Cloudflare deployment](CLOUDFLARE_DEPLOY.md). The current source uses `wrangler.json`, a standalone Worker entrypoint, protected initialization and Cloudflare Access validation; it no longer requires Sites identity or publishing. The legacy Sites procedure applies only to the historical version-4 source, not this standalone build.
+**Status: managed-auth code tested; cloud D1 and owner-only Access provisioned; dedicated Supabase project and Worker deployment pending.** See [actual deployment record](DEPLOYMENT_STATUS.md). Follow [private Cloudflare deployment](CLOUDFLARE_DEPLOY.md). The current source uses `wrangler.json`, a standalone Worker entrypoint, protected initialization and Cloudflare Access validation; it no longer requires Sites identity or publishing. The legacy Sites procedure applies only to the historical version-4 source, not this standalone build.
 
 | Migration task | Required result |
 |---|---|
 | Provider ownership | Client controls hosting account, billing, environment names and private/staging access |
 | Build/deploy integration | Reviewed Worker entrypoint/assets, client resource bindings and repeatable artifact build; no placeholder IDs deployed |
 | Identity boundary | Configure the implemented Access gateway, protected bootstrap and institution auth with authenticated server identity; block forged identity headers and unauthenticated bootstrap |
-| Institution auth | Preserve built-in role/JWT/token/version checks or implement a reviewed equivalent; rerun scope/reset/revocation tests |
+| Institution auth | Configure Supabase passwords and preserve D1 role/JWT/token-version checks; rerun scope/reset/revocation tests |
 | Data transfer | Export/import all relevant tables/cache and migrate schema; verify IDs, history, row counts and foreign keys |
 | Secrets | Client-owned environment-specific secret store; no frontend or committed credentials |
 | Operations | Restricted origin/admin access, trustworthy IP handling, logs/health, backups, tested restore and rollback |
@@ -45,7 +45,7 @@ The runtime secret is managed separately from source. A deployment does not crea
 
 Use the root `wrangler.json` as the application template and follow the standalone guide to bind real D1 as `DB`. `wrangler.local.json` and the database-only template are database-administration configs, not deployment configs. Do not run a generic deploy command against either expecting a complete private product.
 
-Vercel, a VPS, PostgreSQL/Supabase or alternate auth providers need separate architecture/adapter changes. The delivered Next-style routes do not make this an ordinary portable `next start` application; the runtime imports `cloudflare:workers`.
+Vercel, a VPS, moving academic data to PostgreSQL/Supabase, or alternate auth providers need separate architecture/adapter changes. Supabase password authentication is already integrated; use [Supabase setup](SUPABASE_SETUP.md). The delivered Next-style routes do not make this an ordinary portable `next start` application; the runtime imports `cloudflare:workers`.
 
 ## Release checklist
 

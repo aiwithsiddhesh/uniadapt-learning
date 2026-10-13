@@ -1,0 +1,1 @@
+ALTER TABLE `accounts` ADD `auth_provider_generation` text;

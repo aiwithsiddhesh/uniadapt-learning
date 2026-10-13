@@ -50,6 +50,20 @@
       "when": 1791865828148,
       "tag": "0006_outgoing_miracleman",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1791888695161,
+      "tag": "0007_supabase_auth",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1791890532003,
+      "tag": "0008_credential_generation",
+      "breakpoints": true
     }
   ]
 }
