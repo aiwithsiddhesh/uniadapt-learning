@@ -1,0 +1,3 @@
+# Example only. Run `pnpm setup:local` to generate a local secret without printing it.
+# Production uses the hosting provider's secret store, not this file.
+UNIADAPT_AUTH_SECRET=

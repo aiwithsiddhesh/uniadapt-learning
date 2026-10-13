@@ -12,7 +12,12 @@
     "start": "node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js dev --config dist/server/wrangler.json --local --persist-to .wrangler/state --ip 127.0.0.1 --inspector-port 0",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate",
-    "test": "node --test tests/*.test.mts"
+    "test": "node --test tests/*.test.mts",
+    "typecheck": "tsc --noEmit",
+    "setup:local": "node scripts/setup-local.mjs",
+    "check:setup": "node scripts/check-setup.mjs",
+    "db:migrate:local": "wrangler d1 migrations apply DB --local --config wrangler.local.json --persist-to .wrangler/state",
+    "db:check:local": "wrangler d1 execute DB --local --config wrangler.local.json --persist-to .wrangler/state --command \"SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name\""
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",

@@ -54,3 +54,11 @@ next-env.d.ts
 /.codex/
 /outputs/
 /work/
+
+# Local secrets and generated handover tooling output
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
+*.tsbuildinfo
+wrangler.client.json
+*.backup.sql
